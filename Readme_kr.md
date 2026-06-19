@@ -1,0 +1,172 @@
+# Markdown Render HTML
+
+[English README](./Readme.md)
+
+`markdown_render_html`은 Markdown/JSON 문서 트리를 단일 정적 HTML 문서
+사이트로 변환하는 Deno 기반 유틸리티입니다. 기본적으로 다음을 제공합니다.
+
+- sidebar navigation
+- single-doc / all-docs view mode
+- 로컬 Markdown 링크의 내부 anchor 변환
+- syntax highlighting
+- Mermaid diagram 렌더링
+- 코드블록 copy button
+- light / dark / system theme
+
+## 이 저장소에 들어있는 것
+
+```text
+markdown_render_html/
+├── render-doc-html.ts
+├── Readme.md
+└── Readme_kr.md
+```
+
+이 저장소에는 **renderer 자체**만 둡니다. 프로젝트별 preset, deploy script,
+output 디렉토리는 이 스크립트를 사용하는 쪽 저장소에서 관리하는 것을 기본으로
+합니다.
+
+## 요구사항
+
+- Deno 2.x
+- 렌더 시 네트워크 접근 가능 환경
+  - 첫 실행 시 Deno가 npm dependency를 내려받음
+  - 렌더 시 Prism / Mermaid runtime JS를 `output/assets/`로 내려받음
+
+## Deno 설치
+
+### macOS / Linux
+
+```bash
+curl -fsSL https://deno.land/install.sh | sh
+```
+
+### Homebrew
+
+```bash
+brew install deno
+```
+
+### Windows PowerShell
+
+```powershell
+irm https://deno.land/install.ps1 | iex
+```
+
+### 설치 확인
+
+```bash
+deno --version
+```
+
+## 빠른 시작
+
+```bash
+git clone https://github.com/keispace/markdown_render_html.git
+cd markdown_render_html
+
+deno run -A ./render-doc-html.ts \
+  --input /path/to/docs \
+  --output /path/to/docs/output/index.html \
+  --title "Project Docs"
+```
+
+생성물:
+
+- `/path/to/docs/output/index.html`
+- `/path/to/docs/output/index.css`
+- `/path/to/docs/output/assets/*.js`
+
+## CLI 옵션
+
+| 옵션 | 의미 | 기본값 |
+| --- | --- | --- |
+| `--input <path>` | source root | `./` |
+| `--output <path>` | output HTML 경로 | `./output/index.html` |
+| `--exclude <pattern>` | gitignore-style exclude pattern, 반복 지정 가능 | `_*.md`, `.*`, `**/.*/**` |
+| `--title <text>` | HTML `<title>` + sidebar title | `Render Docs` |
+
+## 지원 입력 형식
+
+- `*.md`
+- `*.json`
+
+그 외 형식은 직접 렌더하지 않습니다. 필요하면 Markdown 안에 감싸서 포함하는
+방식으로 사용합니다.
+
+## 기본 동작
+
+1. input root 아래에서 Markdown/JSON 파일을 재귀 탐색합니다.
+2. exclude pattern은 디렉토리 진입 전부터 적용합니다.
+3. Markdown 문서는 첫 H1을 title로 사용합니다.
+4. JSON 파일은 JSON code block으로 렌더합니다.
+5. CSS는 별도 `.css` 파일로 분리합니다.
+6. Prism / Mermaid runtime JS를 `output/assets/`에 내려받습니다.
+7. 생성된 HTML은 외부 CDN이 아니라 로컬 asset만 참조합니다.
+
+## 문서 작성 규칙
+
+### 제목 / 라벨
+
+- 각 Markdown 문서에는 명확한 H1을 두는 편이 좋습니다.
+- sidebar label이 이상하면 renderer 하드코딩으로 보정하지 말고 파일명, 폴더명,
+  H1을 수정해서 맞춥니다.
+
+### 링크
+
+- standard markdown link를 사용합니다.
+- 가능하면 아래처럼 **명시적인 상대 경로 + heading fragment**를 씁니다.
+
+```md
+[Schema](./contract/schema.md#basic-structure)
+```
+
+- 로컬 `.md`, `.json` 링크는 output HTML에서 내부 anchor로 다시 씁니다.
+- 확장자 없는 로컬 링크도 지원합니다.
+
+```md
+[Schema](./contract/schema)
+```
+
+- 외부 `http(s):`, `mailto:`, `//`, 절대 경로(`/...`) 링크는 그대로 둡니다.
+
+### internal note
+
+- 렌더에서 빼고 싶은 internal note는 `_*.md`로 둡니다.
+- dot hidden path도 기본 제외됩니다.
+
+## 코드블록 / Mermaid
+
+- 일반 코드블록에는 copy button이 붙습니다.
+- ```` ```mermaid ```` fenced block은 SVG diagram으로 렌더합니다.
+- Mermaid 렌더 실패 시에는 원본 code block을 fallback으로 그대로 보여줍니다.
+
+## 출력 결과
+
+생성 사이트는 기본적으로 다음을 포함합니다.
+
+- sidebar tree navigation
+- single-doc / all-docs mode
+- prev / next navigation
+- internal hash navigation
+- code copy buttons
+- Prism highlighting
+- Mermaid diagrams
+- light / dark / system theme
+
+## consumer repo에서의 예시
+
+```bash
+deno run -A /path/to/markdown_render_html/render-doc-html.ts \
+  --input /path/to/docs \
+  --output /path/to/docs/output/index.html \
+  --exclude index.md \
+  --exclude '**/private/**' \
+  --title 'Project Docs'
+```
+
+## 현재 한계
+
+- 현재는 render 시점 네트워크 접근이 필요합니다.
+- Markdown/JSON만 직접 렌더합니다.
+- unresolved local link에 대한 별도 warning report는 아직 없습니다.

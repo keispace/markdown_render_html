@@ -164,6 +164,19 @@ deno run -A /path/to/markdown_render_html/render-doc-html.ts \
   --title 'Project Docs'
 ```
 
+## Deployment (optional)
+
+The renderer only generates static files, so you can publish the output with any
+static host. If you want a very simple CLI-based option, [Surge](https://surge.sh/)
+is a good fit for quickly publishing a single output directory.
+
+```bash
+npm install --global surge
+surge /path/to/docs/output your-project.surge.sh
+```
+
+That uploads the generated `index.html`, `index.css`, and `assets/` directory as-is.
+
 ## Limitations
 
 - Build-time network access is currently required.

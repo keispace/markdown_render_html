@@ -165,6 +165,19 @@ deno run -A /path/to/markdown_render_html/render-doc-html.ts \
   --title 'Project Docs'
 ```
 
+## 배포 (선택)
+
+이 renderer는 정적 파일만 생성하므로, 결과물은 아무 static host에나 올릴 수
+있습니다. CLI로 빠르게 올리고 싶다면 [Surge](https://surge.sh/)가 생성된 output
+디렉토리 하나를 바로 배포하기에 간단한 선택지입니다.
+
+```bash
+npm install --global surge
+surge /path/to/docs/output your-project.surge.sh
+```
+
+위 명령은 생성된 `index.html`, `index.css`, `assets/` 디렉토리를 그대로 업로드합니다.
+
 ## 현재 한계
 
 - 현재는 render 시점 네트워크 접근이 필요합니다.

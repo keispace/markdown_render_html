@@ -17,14 +17,22 @@
 
 ```text
 markdown_render_html/
+├── docs/
+│   └── assets/index.png
+├── sample/
+│   ├── deploy-output.sh
+│   └── docs/
+│       ├── 00-overview.md
+│       ├── data/profile.json
+│       └── guide/getting-started.md
 ├── render-doc-html.ts
 ├── Readme.md
 └── Readme_kr.md
 ```
 
-이 저장소에는 **renderer 자체**만 둡니다. 프로젝트별 preset, deploy script,
-output 디렉토리는 이 스크립트를 사용하는 쪽 저장소에서 관리하는 것을 기본으로
-합니다.
+이 저장소에는 renderer 자체와 로컬에서 바로 돌려볼 수 있는 작은 `sample/`
+문서셋을 함께 둡니다. 프로젝트별 preset, deploy script, output 디렉토리는 이
+스크립트를 사용하는 쪽 저장소에서 관리하는 것을 기본으로 합니다.
 
 ## 요구사항
 
@@ -76,6 +84,33 @@ deno run -A ./render-doc-html.ts \
 - `/path/to/docs/output/index.html`
 - `/path/to/docs/output/index.css`
 - `/path/to/docs/output/assets/*.js`
+
+## 포함된 sample 실행
+
+```bash
+deno run -A ./render-doc-html.ts \
+  --input ./sample/docs \
+  --output ./sample/output/index.html \
+  --title "Sample Docs"
+```
+
+렌더 후에는 브라우저에서 `./sample/output/index.html`을 열면 됩니다.
+
+- 공개 URL이 필요하면 sample을 자신의 Surge 도메인으로 배포해서 사용하면 됩니다.
+- 스크린샷:
+
+![Sample Docs screenshot](./docs/assets/index.png)
+
+렌더된 sample output을 Surge에 배포하려면:
+
+```bash
+printf '%s\n' 'your-project.surge.sh' > ./sample/output/CNAME
+./sample/deploy-output.sh
+```
+
+스크립트는 `./sample/output/CNAME`에 들어 있는 도메인을 기준으로 `surge`를
+실행합니다. `your-project.surge.sh` 부분은 자신의 Surge 도메인으로 바꿔서
+사용하면 됩니다.
 
 ## CLI 옵션
 

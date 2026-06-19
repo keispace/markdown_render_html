@@ -17,13 +17,22 @@ document tree into a single static HTML documentation site with:
 
 ```text
 markdown_render_html/
+├── docs/
+│   └── assets/index.png
+├── sample/
+│   ├── deploy-output.sh
+│   └── docs/
+│       ├── 00-overview.md
+│       ├── data/profile.json
+│       └── guide/getting-started.md
 ├── render-doc-html.ts
 ├── Readme.md
 └── Readme_kr.md
 ```
 
-This repository ships the renderer itself. Project-specific presets, deploy
-scripts, and output directories should live in the consuming repository.
+This repository ships the renderer itself plus a small `sample/` docs tree you
+can render locally. Project-specific presets, deploy scripts, and output
+directories should live in the consuming repository.
 
 ## Requirements
 
@@ -75,6 +84,33 @@ Generated files:
 - `/path/to/docs/output/index.html`
 - `/path/to/docs/output/index.css`
 - `/path/to/docs/output/assets/*.js`
+
+## Run the included sample
+
+```bash
+deno run -A ./render-doc-html.ts \
+  --input ./sample/docs \
+  --output ./sample/output/index.html \
+  --title "Sample Docs"
+```
+
+Then open `./sample/output/index.html` in a browser.
+
+- Public preview: deploy the sample to your own Surge domain if you want a shared URL.
+- Screenshot:
+
+![Sample Docs screenshot](./docs/assets/index.png)
+
+Deploy the rendered sample output to Surge:
+
+```bash
+printf '%s\n' 'your-project.surge.sh' > ./sample/output/CNAME
+./sample/deploy-output.sh
+```
+
+The script reads the target domain from `./sample/output/CNAME` and runs `surge`
+with the output directory only. Replace `your-project.surge.sh` with your own
+Surge domain.
 
 ## CLI options
 

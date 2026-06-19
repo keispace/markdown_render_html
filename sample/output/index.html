@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sample Docs</title>
+    <script>
+      (() => {
+        const storageKey = 'render-doc-theme-mode';
+        let themeMode = 'system';
+
+        try {
+          const stored = window.localStorage.getItem(storageKey);
+          if (stored === 'light' || stored === 'dark' || stored === 'system') {
+            themeMode = stored;
+          }
+        } catch {
+          // ignore storage access failure
+        }
+
+        const prefersDark = window.matchMedia &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const resolvedTheme = themeMode === 'system'
+          ? (prefersDark ? 'dark' : 'light')
+          : themeMode;
+
+        document.documentElement.dataset.themeMode = themeMode;
+        document.documentElement.dataset.themeResolved = resolvedTheme;
+      })();
+    </script>
+    <script defer src="assets/prism.min.js"></script>
+    <script defer src="assets/prism-json.min.js"></script>
+    <script defer src="assets/prism-bash.min.js"></script>
+    <script defer src="assets/prism-typescript.min.js"></script>
+    <script defer src="assets/prism-yaml.min.js"></script>
+    <script defer src="assets/mermaid.min.js"></script>
+        <link rel="stylesheet" href="index.css" />
+  </head>
+  <body data-view-mode="single" data-active-doc="doc-00-overview-md" data-sidebar-open="true" data-sidebar-viewport="wide">
+    <div class="page">
+      <aside class="sidebar" id="sidebar-panel">
+        <h1>Sample Docs</h1>
+        <p class="meta">Generated at 2026-06-19T07:57:48.307Z</p>
+        <div class="sidebar-scroll">
+          <ul class="tree-root"><li class="tree-branch"><details open><summary>Data</summary><ul class="tree-children"><li class="tree-leaf"><a href="#doc-data--profile-json" data-doc-target="doc-data--profile-json">Profile</a></li></ul></details></li>
+<li class="tree-branch"><details open><summary>Guide</summary><ul class="tree-children"><li class="tree-leaf"><a href="#doc-guide--getting-started-md" data-doc-target="doc-guide--getting-started-md">Getting Started</a></li></ul></details></li>
+<li class="tree-leaf"><a href="#doc-00-overview-md" data-doc-target="doc-00-overview-md">Sample Overview</a></li></ul>
+        </div>
+      </aside>
+      <main class="content">
+        <div class="content-toolbar">
+          <div class="view-tabs">
+            <button class="toolbar-icon-button" type="button" id="sidebar-toggle-button" aria-controls="sidebar-panel" aria-expanded="true" aria-label="Hide navigation" title="Hide navigation" data-sidebar-state="open">
+              <svg class="sidebar-toggle-icon" viewBox="0 0 20 20" aria-hidden="true">
+                <rect x="2.75" y="3.25" width="14.5" height="13.5" rx="2"></rect>
+                <path d="M7.4 4.9v10.2"></path>
+                <g data-icon-state="open">
+                  <path d="M12.4 8.1 9.8 10l2.6 1.9"></path>
+                </g>
+                <g data-icon-state="closed">
+                  <path d="M10 8.1 12.6 10 10 11.9"></path>
+                </g>
+              </svg>
+            </button>
+            <button class="view-tab is-active" type="button" data-view-mode="single">Single Doc</button>
+            <button class="view-tab" type="button" data-view-mode="all">All Docs</button>
+            <div class="theme-control" role="group" aria-label="Theme">
+              <button class="theme-icon-button" type="button" data-theme-mode="system" aria-label="System theme" title="System theme">◐</button>
+              <button class="theme-icon-button" type="button" data-theme-mode="light" aria-label="Light theme" title="Light theme">☀</button>
+              <button class="theme-icon-button" type="button" data-theme-mode="dark" aria-label="Dark theme" title="Dark theme">☾</button>
+            </div>
+          </div>
+        </div>
+        
+      <section id="doc-00-overview-md" class="doc-section">
+        <h1>Sample Overview</h1>
+<p>This sample shows a tiny Markdown/JSON docs tree that can be rendered into a
+single static HTML documentation site.</p>
+<h2 id="doc-00-overview-md--included-examples">Included examples</h2>
+<ul>
+<li>a relative Markdown link to <a href="#doc-guide--getting-started-md--run-the-renderer">Getting Started</a></li>
+<li>a local JSON document link to <a href="#doc-data--profile-json">Profile JSON</a></li>
+<li>a regular code block with syntax highlighting</li>
+<li>a Mermaid diagram</li>
+</ul>
+<h2 id="doc-00-overview-md--example-code-block">Example code block</h2>
+<pre><code class="language-typescript">const sampleTitle = &quot;Sample Docs&quot;;
+console.log(`Rendering ${sampleTitle}`);
+</code></pre>
+<h2 id="doc-00-overview-md--next">Next</h2>
+<p>Open <a href="#doc-guide--getting-started-md">Getting Started</a> for the render command.</p>
+
+      </section>
+<hr class="section-divider" />
+
+      <section id="doc-data--profile-json" class="doc-section">
+        <h1>Profile</h1>
+<pre><code class="language-json">{
+  &quot;profile&quot;: {
+    &quot;name&quot;: &quot;Sample User&quot;,
+    &quot;role&quot;: &quot;documentation-owner&quot;,
+    &quot;features&quot;: [
+      &quot;markdown-links&quot;,
+      &quot;json-rendering&quot;,
+      &quot;mermaid&quot;,
+      &quot;syntax-highlighting&quot;
+    ]
+  }
+}
+</code></pre>
+      </section>
+<hr class="section-divider" />
+
+      <section id="doc-guide--getting-started-md" class="doc-section">
+        <h1>Getting Started</h1>
+<p>Back to <a href="#doc-00-overview-md">Sample Overview</a>.</p>
+<h2 id="doc-guide--getting-started-md--run-the-renderer">Run the renderer</h2>
+<pre><code class="language-bash">deno run -A ./render-doc-html.ts \
+  --input ./sample/docs \
+  --output ./sample/output/index.html \
+  --title &quot;Sample Docs&quot;
+</code></pre>
+<p>After rendering, open <code>./sample/output/index.html</code> in a browser.</p>
+<h2 id="doc-guide--getting-started-md--render-flow">Render flow</h2>
+<pre><code class="language-mermaid">flowchart LR
+  A[Markdown and JSON docs] --&gt; B[render-doc-html.ts]
+  B --&gt; C[Static HTML output]
+</code></pre>
+<h2 id="doc-guide--getting-started-md--related-data">Related data</h2>
+<p>See <a href="#doc-data--profile-json">Profile JSON</a>.</p>
+
+      </section>
+        <div class="single-doc-nav">
+          <button type="button" id="prev-doc-button">← Previous</button>
+          <div class="single-doc-nav__current" id="single-doc-current-label"></div>
+          <button type="button" id="next-doc-button">Next →</button>
+        </div>
+      </main>
+    </div>
+    <button type="button" class="sidebar-backdrop" id="sidebar-backdrop" aria-label="Close navigation"></button>
+    <button type="button" class="back-to-top" id="back-to-top-button">↑ Top</button>
+    <script>
+      (() => {
+        const root = document.documentElement;
+        const body = document.body;
+        const sectionSelector = '.doc-section';
+        const sectionNodes = Array.from(document.querySelectorAll(sectionSelector));
+        const sectionIds = new Set(sectionNodes.map((node) => node.id));
+        const internalAnchors = Array.from(document.querySelectorAll('a[href^="#"]'));
+        const viewTabs = Array.from(document.querySelectorAll('[data-view-mode]'));
+        const docTriggers = Array.from(document.querySelectorAll('[data-doc-target]'));
+        const prevDocButton = document.getElementById('prev-doc-button');
+        const nextDocButton = document.getElementById('next-doc-button');
+        const currentDocLabel = document.getElementById('single-doc-current-label');
+        const sidebarToggleButton = document.getElementById('sidebar-toggle-button');
+        const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        const backToTopButton = document.getElementById('back-to-top-button');
+        const themeButtons = Array.from(document.querySelectorAll('[data-theme-mode]'));
+        const narrowSidebarQuery = window.matchMedia('(max-width: 960px)');
+        const themePreferenceQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const themeStorageKey = 'render-doc-theme-mode';
+        const docOrder = [{"sectionId":"doc-00-overview-md","title":"Sample Overview"},{"sectionId":"doc-data--profile-json","title":"Profile"},{"sectionId":"doc-guide--getting-started-md","title":"Getting Started"}];
+
+        let activeDoc = body.dataset.activeDoc || (sectionNodes[0] ? sectionNodes[0].id : '');
+        let sidebarOpen = true;
+        let mermaidRenderToken = 0;
+        let mermaidRenderQueued = false;
+
+        const syncDocState = () => {
+          body.dataset.activeDoc = activeDoc;
+          const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
+          const activeEntry = activeIndex >= 0 ? docOrder[activeIndex] : null;
+
+          sectionNodes.forEach((node) => {
+            node.classList.toggle('is-active-doc', node.id === activeDoc);
+          });
+          docTriggers.forEach((trigger) => {
+            trigger.classList.toggle('is-active-doc-link', trigger.dataset.docTarget === activeDoc);
+          });
+
+          if (currentDocLabel) {
+            currentDocLabel.textContent = activeEntry ? activeEntry.title : '';
+          }
+          if (prevDocButton) {
+            prevDocButton.disabled = activeIndex <= 0;
+          }
+          if (nextDocButton) {
+            nextDocButton.disabled = activeIndex < 0 || activeIndex >= docOrder.length - 1;
+          }
+        };
+
+        const normalizeHashTarget = (targetId) => {
+          const rawTargetId = (targetId || '').replace(/^#/, '');
+          if (!rawTargetId) {
+            return '';
+          }
+
+          try {
+            return decodeURIComponent(rawTargetId);
+          } catch {
+            return rawTargetId;
+          }
+        };
+
+        const resolveDocId = (targetId) => {
+          const normalizedTargetId = normalizeHashTarget(targetId);
+          if (!normalizedTargetId) {
+            return '';
+          }
+          if (sectionIds.has(normalizedTargetId)) {
+            return normalizedTargetId;
+          }
+          const targetNode = document.getElementById(normalizedTargetId);
+          const sectionNode = targetNode ? targetNode.closest(sectionSelector) : null;
+          return sectionNode ? sectionNode.id : '';
+        };
+
+        const scrollToTarget = (targetId) => {
+          const normalizedTargetId = normalizeHashTarget(targetId);
+          const targetNode = normalizedTargetId ? document.getElementById(normalizedTargetId) : null;
+          const fallbackNode = activeDoc ? document.getElementById(activeDoc) : null;
+          const nodeToScroll = targetNode || fallbackNode;
+          if (nodeToScroll) {
+            nodeToScroll.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        const syncBackToTopVisibility = () => {
+          if (!backToTopButton) {
+            return;
+          }
+          backToTopButton.classList.toggle('is-visible', window.scrollY > 160);
+        };
+
+        const syncSidebarState = () => {
+          const sidebarViewport = narrowSidebarQuery.matches ? 'narrow' : 'wide';
+          body.dataset.sidebarViewport = sidebarViewport;
+          body.dataset.sidebarOpen = sidebarOpen ? 'true' : 'false';
+
+          if (sidebarToggleButton) {
+            const label = sidebarOpen ? 'Hide navigation' : 'Show navigation';
+            sidebarToggleButton.dataset.sidebarState = sidebarOpen ? 'open' : 'closed';
+            sidebarToggleButton.setAttribute('aria-label', label);
+            sidebarToggleButton.setAttribute('title', label);
+            sidebarToggleButton.setAttribute('aria-expanded', sidebarOpen ? 'true' : 'false');
+          }
+        };
+
+        const setSidebarOpen = (nextOpen) => {
+          sidebarOpen = nextOpen;
+          syncSidebarState();
+        };
+
+        const toggleSidebar = () => {
+          setSidebarOpen(!sidebarOpen);
+        };
+
+        const syncSidebarViewportDefaults = () => {
+          const nextViewport = narrowSidebarQuery.matches ? 'narrow' : 'wide';
+          if (body.dataset.sidebarViewport !== nextViewport) {
+            sidebarOpen = nextViewport === 'wide';
+          }
+          syncSidebarState();
+        };
+
+        const resolveThemeMode = (themeMode) => {
+          if (themeMode === 'light' || themeMode === 'dark') {
+            return themeMode;
+          }
+          return themePreferenceQuery.matches ? 'dark' : 'light';
+        };
+
+        const applyThemeMode = (themeMode, persist) => {
+          const nextThemeMode =
+            themeMode === 'light' || themeMode === 'dark' || themeMode === 'system'
+              ? themeMode
+              : 'system';
+
+          root.dataset.themeMode = nextThemeMode;
+          root.dataset.themeResolved = resolveThemeMode(nextThemeMode);
+
+          themeButtons.forEach((button) => {
+            const isActive = button instanceof HTMLElement &&
+              button.dataset.themeMode === nextThemeMode;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+          });
+
+          if (persist) {
+            try {
+              window.localStorage.setItem(themeStorageKey, nextThemeMode);
+            } catch {
+              // ignore storage access failure
+            }
+          }
+
+          scheduleMermaidRender();
+        };
+
+        const getMermaidApi = () => {
+          const candidate = window.mermaid;
+          if (
+            candidate &&
+            typeof candidate.initialize === 'function' &&
+            typeof candidate.render === 'function'
+          ) {
+            return candidate;
+          }
+          return null;
+        };
+
+        const installMermaidBlocks = () => {
+          const codeNodes = Array.from(document.querySelectorAll('pre > code.language-mermaid'));
+
+          codeNodes.forEach((codeNode, index) => {
+            const pre = codeNode.parentElement;
+            const parentNode = pre?.parentNode;
+            if (!(pre instanceof HTMLElement) || !parentNode || pre.dataset.mermaidReady === 'true') {
+              return;
+            }
+
+            pre.dataset.mermaidReady = 'true';
+            pre.classList.add('mermaid-source');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'mermaid-block';
+            wrapper.dataset.mermaidSource = codeNode.textContent || '';
+            wrapper.dataset.mermaidIndex = String(index);
+
+            const diagram = document.createElement('div');
+            diagram.className = 'mermaid-diagram';
+            diagram.setAttribute('aria-label', 'Mermaid diagram');
+
+            parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(diagram);
+            wrapper.appendChild(pre);
+          });
+        };
+
+        const renderMermaidDiagrams = async () => {
+          const mermaidApi = getMermaidApi();
+          const mermaidBlocks = Array.from(document.querySelectorAll('.mermaid-block'));
+          if (!mermaidApi || mermaidBlocks.length === 0) {
+            return;
+          }
+
+          const nextToken = ++mermaidRenderToken;
+          mermaidApi.initialize({
+            startOnLoad: false,
+            securityLevel: 'loose',
+            theme: root.dataset.themeResolved === 'dark' ? 'dark' : 'default',
+          });
+
+          for (const block of mermaidBlocks) {
+            if (!(block instanceof HTMLElement)) {
+              continue;
+            }
+            const diagram = block.querySelector('.mermaid-diagram');
+            const pre = block.querySelector('pre.mermaid-source');
+            const source = block.dataset.mermaidSource || '';
+            if (!(diagram instanceof HTMLElement) || !(pre instanceof HTMLElement) || source.trim() === '') {
+              continue;
+            }
+
+            try {
+              const { svg, bindFunctions } = await mermaidApi.render(
+                'mermaid-diagram-' + nextToken + '-' +
+                  (block.dataset.mermaidIndex || '0'),
+                source,
+              );
+              if (nextToken !== mermaidRenderToken) {
+                return;
+              }
+              diagram.classList.remove('is-error');
+              diagram.innerHTML = svg;
+              if (typeof bindFunctions === 'function') {
+                bindFunctions(diagram);
+              }
+              pre.hidden = true;
+            } catch {
+              diagram.classList.add('is-error');
+              diagram.replaceChildren();
+              const message = document.createElement('div');
+              message.className = 'mermaid-diagram__message';
+              message.textContent = 'Mermaid render failed. Showing source instead.';
+              diagram.appendChild(message);
+              pre.hidden = false;
+            }
+          }
+        };
+
+        const scheduleMermaidRender = () => {
+          const mermaidApi = getMermaidApi();
+          if (!mermaidApi || mermaidRenderQueued) {
+            return;
+          }
+          mermaidRenderQueued = true;
+          window.requestAnimationFrame(async () => {
+            mermaidRenderQueued = false;
+            await renderMermaidDiagrams();
+          });
+        };
+
+        const fallbackCopyText = (text) => {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.top = '0';
+          textarea.style.left = '0';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+
+          try {
+            return document.execCommand('copy');
+          } finally {
+            textarea.remove();
+          }
+        };
+
+        const writeClipboardText = async (text) => {
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function' && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+
+          if (!fallbackCopyText(text)) {
+            throw new Error('Copy failed');
+          }
+        };
+
+        const installCopyButtons = () => {
+          const codeNodes = Array.from(document.querySelectorAll('pre > code'));
+
+          codeNodes.forEach((codeNode) => {
+            const pre = codeNode.parentElement;
+            const parentNode = pre?.parentNode;
+            if (!(pre instanceof HTMLElement) || !parentNode || pre.dataset.copyButtonReady === 'true') {
+              return;
+            }
+            if (codeNode.classList.contains('language-mermaid') || pre.closest('.mermaid-block')) {
+              return;
+            }
+
+            pre.dataset.copyButtonReady = 'true';
+            pre.classList.add('has-copy-button');
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'code-block';
+            parentNode.insertBefore(wrapper, pre);
+            wrapper.appendChild(pre);
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'code-copy-button';
+            button.setAttribute('aria-label', 'Copy code block');
+            button.setAttribute('title', 'Copy code');
+            button.textContent = '⧉';
+
+            let resetTimer = 0;
+            const resetButton = () => {
+              button.classList.remove('is-copied');
+              button.textContent = '⧉';
+              button.setAttribute('title', 'Copy code');
+            };
+
+            button.addEventListener('click', async () => {
+              if (resetTimer) {
+                window.clearTimeout(resetTimer);
+              }
+
+              try {
+                await writeClipboardText(codeNode.textContent || '');
+                button.classList.add('is-copied');
+                button.textContent = '✓';
+                button.setAttribute('title', 'Copied');
+              } catch {
+                button.classList.remove('is-copied');
+                button.textContent = '!';
+                button.setAttribute('title', 'Copy failed');
+              }
+
+              resetTimer = window.setTimeout(() => {
+                resetButton();
+              }, 1400);
+            });
+
+            wrapper.appendChild(button);
+          });
+        };
+
+        const setMode = (mode) => {
+          body.dataset.viewMode = mode;
+          viewTabs.forEach((tab) => {
+            tab.classList.toggle('is-active', tab.dataset.viewMode === mode);
+          });
+        };
+
+        const activateDoc = (docId, switchToSingle) => {
+          if (!docId) {
+            return;
+          }
+          activeDoc = docId;
+          if (switchToSingle) {
+            setMode('single');
+          }
+          syncDocState();
+        };
+
+        const activateTarget = (targetId, switchToSingle, shouldScroll) => {
+          const docId = resolveDocId(targetId);
+          if (!docId) {
+            return;
+          }
+          activateDoc(docId, switchToSingle);
+          if (shouldScroll) {
+            scrollToTarget(targetId || docId);
+          }
+        };
+
+        viewTabs.forEach((tab) => {
+          tab.addEventListener('click', () => {
+            const mode = tab.dataset.viewMode || 'all';
+            setMode(mode);
+            syncDocState();
+          });
+        });
+
+        internalAnchors.forEach((anchor) => {
+          anchor.addEventListener('click', (event) => {
+            const href = anchor.getAttribute('href') || '';
+            const targetId = href.replace(/^#/, '');
+            const docId = resolveDocId(targetId);
+            if (!docId) {
+              return;
+            }
+
+            const isDocRootTarget = sectionIds.has(targetId);
+            activateDoc(docId, false);
+
+            if (body.dataset.viewMode === 'single') {
+              event.preventDefault();
+              if (window.location.hash !== href) {
+                history.pushState(null, '', href);
+              }
+              if (!isDocRootTarget) {
+                scrollToTarget(targetId);
+              }
+            }
+
+            if (body.dataset.sidebarViewport === 'narrow') {
+              setSidebarOpen(false);
+            }
+          });
+        });
+
+        if (prevDocButton) {
+          prevDocButton.addEventListener('click', () => {
+            const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
+            if (activeIndex > 0) {
+              const previousDocId = docOrder[activeIndex - 1].sectionId;
+              history.pushState(null, '', '#' + previousDocId);
+              activateDoc(previousDocId, false);
+            }
+          });
+        }
+
+        if (nextDocButton) {
+          nextDocButton.addEventListener('click', () => {
+            const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
+            if (activeIndex >= 0 && activeIndex < docOrder.length - 1) {
+              const nextDocId = docOrder[activeIndex + 1].sectionId;
+              history.pushState(null, '', '#' + nextDocId);
+              activateDoc(nextDocId, false);
+            }
+          });
+        }
+
+        if (backToTopButton) {
+          backToTopButton.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+
+        if (sidebarToggleButton) {
+          sidebarToggleButton.addEventListener('click', () => {
+            toggleSidebar();
+          });
+        }
+
+        if (sidebarBackdrop) {
+          sidebarBackdrop.addEventListener('click', () => {
+            if (body.dataset.sidebarViewport === 'narrow') {
+              setSidebarOpen(false);
+            }
+          });
+        }
+
+        themeButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const nextThemeMode = button instanceof HTMLElement
+              ? button.dataset.themeMode || 'system'
+              : 'system';
+            applyThemeMode(nextThemeMode, true);
+          });
+        });
+
+        window.addEventListener('hashchange', () => {
+          const hashId = normalizeHashTarget(window.location.hash);
+          const docId = resolveDocId(hashId);
+          if (!docId) {
+            return;
+          }
+          activateDoc(docId, false);
+          if (body.dataset.viewMode === 'single' && hashId && !sectionIds.has(hashId)) {
+            window.requestAnimationFrame(() => {
+              scrollToTarget(hashId);
+            });
+          }
+        });
+
+        const initialHashId = normalizeHashTarget(window.location.hash);
+        if (initialHashId) {
+          const docId = resolveDocId(initialHashId);
+          if (docId) {
+            activeDoc = docId;
+          }
+        }
+
+        syncDocState();
+        syncSidebarViewportDefaults();
+        applyThemeMode(root.dataset.themeMode || 'system', false);
+        installMermaidBlocks();
+        installCopyButtons();
+        syncBackToTopVisibility();
+
+        if (typeof narrowSidebarQuery.addEventListener === 'function') {
+          narrowSidebarQuery.addEventListener('change', syncSidebarViewportDefaults);
+        } else if (typeof narrowSidebarQuery.addListener === 'function') {
+          narrowSidebarQuery.addListener(syncSidebarViewportDefaults);
+        }
+        if (typeof themePreferenceQuery.addEventListener === 'function') {
+          themePreferenceQuery.addEventListener('change', () => {
+            if ((root.dataset.themeMode || 'system') === 'system') {
+              applyThemeMode('system', false);
+            }
+          });
+        } else if (typeof themePreferenceQuery.addListener === 'function') {
+          themePreferenceQuery.addListener(() => {
+            if ((root.dataset.themeMode || 'system') === 'system') {
+              applyThemeMode('system', false);
+            }
+          });
+        }
+        window.addEventListener('scroll', syncBackToTopVisibility, { passive: true });
+        window.addEventListener('load', () => {
+          scheduleMermaidRender();
+        }, { once: true });
+
+        if (body.dataset.viewMode === 'single' && initialHashId && !sectionIds.has(initialHashId)) {
+          window.requestAnimationFrame(() => {
+            scrollToTarget(initialHashId);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

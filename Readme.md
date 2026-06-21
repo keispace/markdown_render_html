@@ -164,6 +164,7 @@ the docs.
 ```
 
 - External `http(s):`, `mailto:`, `//`, and absolute `/...` links are left as-is.
+- Links that are not rewritten to internal doc anchors open in a new tab.
 
 ### Internal notes
 

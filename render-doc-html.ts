@@ -450,6 +450,27 @@ function resolveTargetDocRelPath(
   return null;
 }
 
+function shouldOpenInNewTab(href: string): boolean {
+  return href !== "" && !href.startsWith("#");
+}
+
+function renderAnchorTag(
+  beforeHref: string,
+  href: string,
+  afterHref: string,
+  openInNewTab: boolean,
+): string {
+  const attrs = `${beforeHref}${afterHref}`;
+  const targetAttr = openInNewTab && !/\btarget\s*=/i.test(attrs)
+    ? ' target="_blank"'
+    : "";
+  const relAttr = openInNewTab && !/\brel\s*=/i.test(attrs)
+    ? ' rel="noopener noreferrer"'
+    : "";
+
+  return `<a${beforeHref}href="${escapeHtml(href)}"${afterHref}${targetAttr}${relAttr}>`;
+}
+
 function rewriteLocalMarkdownLinks(
   html: string,
   currentRelPath: string,
@@ -464,7 +485,15 @@ function rewriteLocalMarkdownLinks(
         /^[a-z][a-z0-9+.-]*:/i.test(rawHref) ||
         rawHref.startsWith("//")
       ) {
-        return match;
+        if (rawHref === "") {
+          return match;
+        }
+        return renderAnchorTag(
+          beforeHref,
+          rawHref,
+          afterHref,
+          shouldOpenInNewTab(rawHref),
+        );
       }
 
       const [hrefPath, ...fragmentParts] = rawHref.split("#");
@@ -474,12 +503,22 @@ function rewriteLocalMarkdownLinks(
         docLookup,
       );
       if (!targetRelPath) {
-        return match;
+        return renderAnchorTag(
+          beforeHref,
+          rawHref,
+          afterHref,
+          shouldOpenInNewTab(rawHref),
+        );
       }
 
       const targetDoc = docLookup.get(normalizeDocRelPath(targetRelPath));
       if (!targetDoc) {
-        return match;
+        return renderAnchorTag(
+          beforeHref,
+          rawHref,
+          afterHref,
+          shouldOpenInNewTab(rawHref),
+        );
       }
 
       const fragment = normalizeMarkdownFragment(fragmentParts.join("#"));
@@ -487,16 +526,26 @@ function rewriteLocalMarkdownLinks(
 
       if (fragment !== "") {
         if (targetDoc.isJson) {
-          return match;
+          return renderAnchorTag(
+            beforeHref,
+            rawHref,
+            afterHref,
+            shouldOpenInNewTab(rawHref),
+          );
         }
         const anchorId = targetDoc.headingAnchorIds.get(fragment);
         if (!anchorId) {
-          return match;
+          return renderAnchorTag(
+            beforeHref,
+            rawHref,
+            afterHref,
+            shouldOpenInNewTab(rawHref),
+          );
         }
         nextHref = `#${anchorId}`;
       }
 
-      return `<a${beforeHref}href="${escapeHtml(nextHref)}"${afterHref}>`;
+      return renderAnchorTag(beforeHref, nextHref, afterHref, false);
     },
   );
 }
@@ -565,7 +614,7 @@ function sortTree(nodes: TreeNode[]): TreeNode[] {
       const aIsBranch = a.href === undefined;
       const bIsBranch = b.href === undefined;
       if (aIsBranch !== bIsBranch) {
-        return aIsBranch ? -1 : 1;
+        return aIsBranch ? 1 : -1;
       }
       return a.sortKey.localeCompare(b.sortKey, "en");
     });

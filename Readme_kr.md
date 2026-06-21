@@ -164,6 +164,7 @@ printf '%s\n' 'your-project.surge.sh' > ./sample/output/CNAME
 ```
 
 - 외부 `http(s):`, `mailto:`, `//`, 절대 경로(`/...`) 링크는 그대로 둡니다.
+- 내부 문서 anchor로 다시 쓰지 않은 링크는 새 창에서 엽니다.
 
 ### internal note
 

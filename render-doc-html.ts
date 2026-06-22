@@ -468,7 +468,9 @@ function renderAnchorTag(
     ? ' rel="noopener noreferrer"'
     : "";
 
-  return `<a${beforeHref}href="${escapeHtml(href)}"${afterHref}${targetAttr}${relAttr}>`;
+  return `<a${beforeHref}href="${
+    escapeHtml(href)
+  }"${afterHref}${targetAttr}${relAttr}>`;
 }
 
 function rewriteLocalMarkdownLinks(
@@ -1379,6 +1381,10 @@ ${runtimeAssetScripts}
           return sectionNode ? sectionNode.id : '';
         };
 
+        const scrollWindowToTop = (behavior = 'smooth') => {
+          window.scrollTo({ top: 0, behavior });
+        };
+
         const scrollToTarget = (targetId) => {
           const normalizedTargetId = normalizeHashTarget(targetId);
           const targetNode = normalizedTargetId ? document.getElementById(normalizedTargetId) : null;
@@ -1388,7 +1394,16 @@ ${runtimeAssetScripts}
             nodeToScroll.scrollIntoView({ behavior: 'smooth', block: 'start' });
             return;
           }
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          scrollWindowToTop();
+        };
+
+        const scrollForSingleDocNavigation = (targetId, behavior = 'smooth') => {
+          const normalizedTargetId = normalizeHashTarget(targetId);
+          if (normalizedTargetId && !sectionIds.has(normalizedTargetId)) {
+            scrollToTarget(normalizedTargetId);
+            return;
+          }
+          scrollWindowToTop(behavior);
         };
 
         const syncBackToTopVisibility = () => {
@@ -1675,17 +1690,6 @@ ${runtimeAssetScripts}
           syncDocState();
         };
 
-        const activateTarget = (targetId, switchToSingle, shouldScroll) => {
-          const docId = resolveDocId(targetId);
-          if (!docId) {
-            return;
-          }
-          activateDoc(docId, switchToSingle);
-          if (shouldScroll) {
-            scrollToTarget(targetId || docId);
-          }
-        };
-
         viewTabs.forEach((tab) => {
           tab.addEventListener('click', () => {
             const mode = tab.dataset.viewMode || 'all';
@@ -1703,7 +1707,6 @@ ${runtimeAssetScripts}
               return;
             }
 
-            const isDocRootTarget = sectionIds.has(targetId);
             activateDoc(docId, false);
 
             if (body.dataset.viewMode === 'single') {
@@ -1711,9 +1714,7 @@ ${runtimeAssetScripts}
               if (window.location.hash !== href) {
                 history.pushState(null, '', href);
               }
-              if (!isDocRootTarget) {
-                scrollToTarget(targetId);
-              }
+              scrollForSingleDocNavigation(targetId);
             }
 
             if (body.dataset.sidebarViewport === 'narrow') {
@@ -1729,6 +1730,7 @@ ${runtimeAssetScripts}
               const previousDocId = docOrder[activeIndex - 1].sectionId;
               history.pushState(null, '', '#' + previousDocId);
               activateDoc(previousDocId, false);
+              scrollWindowToTop();
             }
           });
         }
@@ -1740,6 +1742,7 @@ ${runtimeAssetScripts}
               const nextDocId = docOrder[activeIndex + 1].sectionId;
               history.pushState(null, '', '#' + nextDocId);
               activateDoc(nextDocId, false);
+              scrollWindowToTop();
             }
           });
         }
@@ -1780,9 +1783,9 @@ ${runtimeAssetScripts}
             return;
           }
           activateDoc(docId, false);
-          if (body.dataset.viewMode === 'single' && hashId && !sectionIds.has(hashId)) {
+          if (body.dataset.viewMode === 'single') {
             window.requestAnimationFrame(() => {
-              scrollToTarget(hashId);
+              scrollForSingleDocNavigation(hashId);
             });
           }
         });
@@ -1825,9 +1828,9 @@ ${runtimeAssetScripts}
           scheduleMermaidRender();
         }, { once: true });
 
-        if (body.dataset.viewMode === 'single' && initialHashId && !sectionIds.has(initialHashId)) {
+        if (body.dataset.viewMode === 'single' && initialHashId) {
           window.requestAnimationFrame(() => {
-            scrollToTarget(initialHashId);
+            scrollForSingleDocNavigation(initialHashId, 'auto');
           });
         }
       })();

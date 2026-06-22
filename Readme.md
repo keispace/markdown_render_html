@@ -190,6 +190,8 @@ The generated site includes:
 - Mermaid diagrams
 - light / dark / system themes
 
+In single-doc mode, switching documents through the sidebar or previous/next buttons resets scroll to the top. Links with a specific section hash keep that section at the top instead.
+
 ## Example preset in a consuming repository
 
 ```bash

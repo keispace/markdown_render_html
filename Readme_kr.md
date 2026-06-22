@@ -190,6 +190,8 @@ printf '%s\n' 'your-project.surge.sh' > ./sample/output/CNAME
 - Mermaid diagrams
 - light / dark / system theme
 
+single-doc mode에서는 sidebar나 prev / next로 문서를 바꾸면 스크롤을 맨 위로 올립니다. 반대로 특정 section hash가 있는 링크는 해당 section이 위에 오도록 유지합니다.
+
 ## consumer repo에서의 예시
 
 ```bash

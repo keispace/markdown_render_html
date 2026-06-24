@@ -287,24 +287,6 @@ function humanizeSegment(segment: string): string {
   return humanizeText(segment);
 }
 
-function extractJsonLabel(source: string, relPath: string): string {
-  try {
-    const parsed = JSON.parse(source);
-    if (
-      parsed &&
-      typeof parsed === "object" &&
-      !Array.isArray(parsed) &&
-      typeof parsed.title === "string" &&
-      parsed.title.trim() !== ""
-    ) {
-      return parsed.title.trim();
-    }
-  } catch {
-    // fall through to path-based label
-  }
-  return humanizeText(basename(relPath, ".json"));
-}
-
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -331,12 +313,16 @@ function normalizeRenderedCodeBlockClasses(html: string): string {
             return "language-typescript";
           case "language-js":
             return "language-javascript";
+          case "language-text":
+          case "language-txt":
+          case "language-plain":
+            return "";
           default:
             return className;
         }
       });
 
-      const nextClasses = Array.from(new Set(mappedClassNames)).join(" ");
+      const nextClasses = Array.from(new Set(mappedClassNames)).filter(Boolean).join(" ");
       return nextClasses ? `<pre><code class="${nextClasses}">` : "<pre><code>";
     },
   );
@@ -382,7 +368,7 @@ async function loadSourceDocs(options: Options): Promise<SourceDoc[]> {
       const source = await Deno.readTextFile(absPath);
       const isJson = relPath.endsWith(".json");
       const title = isJson
-        ? extractJsonLabel(source, relPath)
+        ? humanizeText(basename(relPath, ".json"))
         : extractTitle(source, relPath);
 
       return {
@@ -622,6 +608,47 @@ function sortTree(nodes: TreeNode[]): TreeNode[] {
     });
 }
 
+function groupPrefixDocuments(nodes: TreeNode[]): TreeNode[] {
+  const newNodes: TreeNode[] = [];
+  const rootsByPrefix = new Map<string, TreeNode>();
+
+  for (const node of nodes) {
+    if (node.href) {
+      const match = posix.basename(node.sortKey).match(/^(\d+)-0-/);
+      if (match) {
+        const prefix = match[1];
+        const newLabel = node.label.replace(
+          new RegExp(`^${prefix}-0\\b`),
+          prefix,
+        );
+        const rootNode = { ...node, label: newLabel, children: [] };
+        rootsByPrefix.set(prefix, rootNode);
+      }
+    }
+  }
+
+  for (const node of nodes) {
+    if (node.href) {
+      const match0 = posix.basename(node.sortKey).match(/^(\d+)-0-/);
+      if (match0) {
+        newNodes.push(rootsByPrefix.get(match0[1])!);
+        continue;
+      }
+      const matchN = posix.basename(node.sortKey).match(/^(\d+)-([1-9]\d*)-/);
+      if (matchN && rootsByPrefix.has(matchN[1])) {
+        const parent = rootsByPrefix.get(matchN[1])!;
+        parent.children.push(node);
+        continue;
+      }
+    } else {
+      node.children = groupPrefixDocuments(node.children);
+    }
+    newNodes.push(node);
+  }
+
+  return newNodes;
+}
+
 function buildSidebarTree(entries: DocEntry[]): TreeNode[] {
   const roots: TreeNode[] = [];
 
@@ -655,12 +682,24 @@ function buildSidebarTree(entries: DocEntry[]): TreeNode[] {
     });
   }
 
-  return sortTree(roots);
+  return sortTree(groupPrefixDocuments(roots));
 }
 
 function renderTree(nodes: TreeNode[], className: string): string {
   const items = nodes
     .map((node) => {
+      if (node.children && node.children.length > 0) {
+        const summaryContent = node.href
+          ? `<a href="${node.href}" data-doc-target="${
+            escapeHtml(node.sectionId ?? "")
+          }">${escapeHtml(node.label)}</a>`
+          : escapeHtml(node.label);
+
+        return `<li class="tree-branch"><details open><summary>${summaryContent}</summary>${
+          renderTree(node.children, "tree-children")
+        }</details></li>`;
+      }
+
       if (node.href) {
         return `<li class="tree-leaf"><a href="${node.href}" data-doc-target="${
           escapeHtml(node.sectionId ?? "")
@@ -669,7 +708,7 @@ function renderTree(nodes: TreeNode[], className: string): string {
 
       return `<li class="tree-branch"><details open><summary>${
         escapeHtml(node.label)
-      }</summary>${renderTree(node.children, "tree-children")}</details></li>`;
+      }</summary><ul class="tree-children"></ul></details></li>`;
     })
     .join("\n");
 
@@ -856,21 +895,16 @@ ${runtimeAssetScripts}
       }
       .sidebar ul {
         list-style: none;
-        padding: 0;
-        margin: 0;
       }
       .tree-root,
       .tree-children {
         list-style: none;
-        padding: 0;
+        padding: 0 10px;
         margin: 0;
       }
       .tree-root > li + li,
       .tree-children > li + li {
         margin-top: 8px;
-      }
-      .tree-branch details {
-        padding-left: 2px;
       }
       .tree-branch summary {
         cursor: pointer;
@@ -878,14 +912,19 @@ ${runtimeAssetScripts}
         color: var(--text);
         list-style: none;
         margin: 0;
+        position: relative;
+        padding-left: 20px;
       }
       .tree-branch summary::-webkit-details-marker {
         display: none;
       }
       .tree-branch summary::before {
         content: "▾";
-        display: inline-block;
-        width: 1em;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 20px;
+        text-align: center;
         color: var(--muted);
       }
       .tree-branch details:not([open]) summary::before {
@@ -893,8 +932,8 @@ ${runtimeAssetScripts}
       }
       .tree-children {
         margin-top: 8px;
-        margin-left: 16px;
-        padding-left: 12px;
+        margin-left: 10px;
+        padding-left: 10px;
         border-left: 1px solid var(--border);
       }
       .tree-leaf a {

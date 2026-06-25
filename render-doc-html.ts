@@ -55,6 +55,7 @@ type TreeNode = {
   sortKey: string;
   href?: string;
   sectionId?: string;
+  isRealFolder?: boolean;
   children: TreeNode[];
 };
 
@@ -592,17 +593,25 @@ async function buildEntries(
   );
 }
 
-function sortTree(nodes: TreeNode[]): TreeNode[] {
+function sortTree(nodes: TreeNode[], isRoot: boolean = false): TreeNode[] {
   return nodes
     .map((node) => ({
       ...node,
-      children: sortTree(node.children),
+      children: sortTree(node.children, false),
     }))
     .sort((a, b) => {
-      const aIsBranch = a.href === undefined;
-      const bIsBranch = b.href === undefined;
-      if (aIsBranch !== bIsBranch) {
-        return aIsBranch ? 1 : -1;
+      if (isRoot) {
+        const aHasNumber = /^\d/.test(a.sortKey);
+        const bHasNumber = /^\d/.test(b.sortKey);
+        if (aHasNumber !== bHasNumber) {
+          return aHasNumber ? -1 : 1;
+        }
+      } else {
+        const aIsRealFolder = !!a.isRealFolder;
+        const bIsRealFolder = !!b.isRealFolder;
+        if (aIsRealFolder !== bIsRealFolder) {
+          return aIsRealFolder ? -1 : 1;
+        }
       }
       return a.sortKey.localeCompare(b.sortKey, "en");
     });
@@ -617,11 +626,20 @@ function groupPrefixDocuments(nodes: TreeNode[]): TreeNode[] {
       const match = posix.basename(node.sortKey).match(/^(\d+)-0-/);
       if (match) {
         const prefix = match[1];
-        const newLabel = node.label.replace(
-          new RegExp(`^${prefix}-0\\b`),
-          prefix,
-        );
-        const rootNode = { ...node, label: newLabel, children: [] };
+        let rootLabel = node.label;
+        const prefixRegex = new RegExp(`^${prefix}-0[\\.\\s-]*`);
+        if (prefixRegex.test(rootLabel)) {
+          rootLabel = rootLabel.replace(prefixRegex, `${prefix}. `);
+        } else {
+          rootLabel = `${prefix}. ${rootLabel}`;
+        }
+        
+        const dir = posix.dirname(node.sortKey);
+        const rootNode: TreeNode = {
+          label: rootLabel.trim(),
+          sortKey: dir === "." ? `${prefix}-00` : `${dir}/${prefix}-00`,
+          children: []
+        };
         rootsByPrefix.set(prefix, rootNode);
       }
     }
@@ -631,7 +649,12 @@ function groupPrefixDocuments(nodes: TreeNode[]): TreeNode[] {
     if (node.href) {
       const match0 = posix.basename(node.sortKey).match(/^(\d+)-0-/);
       if (match0) {
-        newNodes.push(rootsByPrefix.get(match0[1])!);
+        const prefix = match0[1];
+        const parent = rootsByPrefix.get(prefix)!;
+        parent.children.push(node);
+        if (!newNodes.includes(parent)) {
+          newNodes.push(parent);
+        }
         continue;
       }
       const matchN = posix.basename(node.sortKey).match(/^(\d+)-([1-9]\d*)-/);
@@ -666,6 +689,7 @@ function buildSidebarTree(entries: DocEntry[]): TreeNode[] {
         node = {
           label,
           sortKey: group,
+          isRealFolder: true,
           children: [],
         };
         cursor.push(node);
@@ -682,7 +706,7 @@ function buildSidebarTree(entries: DocEntry[]): TreeNode[] {
     });
   }
 
-  return sortTree(groupPrefixDocuments(roots));
+  return sortTree(groupPrefixDocuments(roots), true);
 }
 
 function renderTree(nodes: TreeNode[], className: string): string {
@@ -936,19 +960,32 @@ ${runtimeAssetScripts}
         padding-left: 10px;
         border-left: 1px solid var(--border);
       }
-      .tree-leaf a {
-        display: block;
+      .tree-leaf a,
+      .tree-branch summary a {
         color: var(--text);
         text-decoration: none;
-        padding: 2px 0;
+        padding: 4px 8px;
+        margin-left: -8px;
+        border-radius: 6px;
+        transition: background-color 150ms ease, color 150ms ease;
       }
-      .tree-leaf a:hover {
+      .tree-leaf a {
+        display: block;
+      }
+      .tree-branch summary a {
+        display: inline-block;
+      }
+      .tree-leaf a:hover,
+      .tree-branch summary a:hover {
         color: var(--link);
-        text-decoration: underline;
+        background: color-mix(in srgb, var(--surface-2) 100%, transparent);
+        text-decoration: none;
       }
-      .tree-leaf a.is-active-doc-link {
+      .tree-leaf a.is-active-doc-link,
+      .tree-branch summary a.is-active-doc-link {
         color: var(--link);
         font-weight: 600;
+        background: color-mix(in srgb, var(--link) 12%, transparent);
       }
       .content {
         min-width: 0;

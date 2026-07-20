@@ -1619,10 +1619,12 @@ ${runtimeAssetScripts}
               continue;
             }
 
+            const renderId = 'mermaid-diagram-' + nextToken + '-' +
+              (block.dataset.mermaidIndex || '0');
+
             try {
               const { svg, bindFunctions } = await mermaidApi.render(
-                'mermaid-diagram-' + nextToken + '-' +
-                  (block.dataset.mermaidIndex || '0'),
+                renderId,
                 source,
               );
               if (nextToken !== mermaidRenderToken) {
@@ -1642,6 +1644,11 @@ ${runtimeAssetScripts}
               message.textContent = 'Mermaid render failed. Showing source instead.';
               diagram.appendChild(message);
               pre.hidden = false;
+            } finally {
+              // Mermaid appends a diagnostic container to <body> when parsing fails.
+              // Remove it so repeated theme renders do not accumulate
+              // "Syntax error in text" messages at the bottom of the document.
+              document.getElementById('d' + renderId)?.remove();
             }
           }
         };

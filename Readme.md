@@ -153,14 +153,14 @@ the docs.
 - Prefer explicit relative links such as:
 
 ```md
-[Schema](./contract/schema.md#basic-structure)
+[Getting started](./sample/docs/guide/getting-started.md#run-the-renderer)
 ```
 
 - Local `.md` and `.json` links are rewritten to generated internal anchors.
 - Extensionless local links are also supported:
 
 ```md
-[Schema](./contract/schema)
+[Getting started](./sample/docs/guide/getting-started)
 ```
 
 - External `http(s):`, `mailto:`, `//`, and absolute `/...` links are left as-is.

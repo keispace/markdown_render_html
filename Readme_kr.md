@@ -153,14 +153,14 @@ printf '%s\n' 'your-project.surge.sh' > ./sample/output/CNAME
 - 가능하면 아래처럼 **명시적인 상대 경로 + heading fragment**를 씁니다.
 
 ```md
-[Schema](./contract/schema.md#basic-structure)
+[시작하기](./sample/docs/guide/getting-started.md#run-the-renderer)
 ```
 
 - 로컬 `.md`, `.json` 링크는 output HTML에서 내부 anchor로 다시 씁니다.
 - 확장자 없는 로컬 링크도 지원합니다.
 
 ```md
-[Schema](./contract/schema)
+[시작하기](./sample/docs/guide/getting-started)
 ```
 
 - 외부 `http(s):`, `mailto:`, `//`, 절대 경로(`/...`) 링크는 그대로 둡니다.

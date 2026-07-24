@@ -748,7 +748,11 @@ function renderHtml(
   const navTree = renderTree(buildSidebarTree(entries), "tree-root");
   const firstSectionId = entries[0]?.sectionId ?? "";
   const docOrderJson = JSON.stringify(
-    entries.map(({ sectionId, title }) => ({ sectionId, title })),
+    entries.map(({ sectionId, title, relPath }) => ({
+      sectionId,
+      title,
+      isAsset: relPath.includes("/assets/") || relPath.startsWith("assets/"),
+    })),
   ).replaceAll(
     "<",
     "\\u003c",
@@ -1403,6 +1407,14 @@ ${runtimeAssetScripts}
         const themeStorageKey = 'render-doc-theme-mode';
         const docOrder = ${docOrderJson};
 
+        // Next/Prev는 assets 폴더 문서(스키마/payload JSON 등)를 건너뛴다.
+        const findAdjacentDocIndex = (fromIndex, dir) => {
+          for (let i = fromIndex + dir; i >= 0 && i < docOrder.length; i += dir) {
+            if (!docOrder[i].isAsset) { return i; }
+          }
+          return -1;
+        };
+
         let activeDoc = body.dataset.activeDoc || (sectionNodes[0] ? sectionNodes[0].id : '');
         let sidebarOpen = true;
         let mermaidRenderToken = 0;
@@ -1424,10 +1436,10 @@ ${runtimeAssetScripts}
             currentDocLabel.textContent = activeEntry ? activeEntry.title : '';
           }
           if (prevDocButton) {
-            prevDocButton.disabled = activeIndex <= 0;
+            prevDocButton.disabled = findAdjacentDocIndex(activeIndex, -1) < 0;
           }
           if (nextDocButton) {
-            nextDocButton.disabled = activeIndex < 0 || activeIndex >= docOrder.length - 1;
+            nextDocButton.disabled = findAdjacentDocIndex(activeIndex, 1) < 0;
           }
         };
 
@@ -1809,8 +1821,9 @@ ${runtimeAssetScripts}
         if (prevDocButton) {
           prevDocButton.addEventListener('click', () => {
             const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
-            if (activeIndex > 0) {
-              const previousDocId = docOrder[activeIndex - 1].sectionId;
+            const targetIndex = findAdjacentDocIndex(activeIndex, -1);
+            if (targetIndex >= 0) {
+              const previousDocId = docOrder[targetIndex].sectionId;
               history.pushState(null, '', '#' + previousDocId);
               activateDoc(previousDocId, false);
               scrollWindowToTop();
@@ -1821,8 +1834,9 @@ ${runtimeAssetScripts}
         if (nextDocButton) {
           nextDocButton.addEventListener('click', () => {
             const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
-            if (activeIndex >= 0 && activeIndex < docOrder.length - 1) {
-              const nextDocId = docOrder[activeIndex + 1].sectionId;
+            const targetIndex = findAdjacentDocIndex(activeIndex, 1);
+            if (targetIndex >= 0) {
+              const nextDocId = docOrder[targetIndex].sectionId;
               history.pushState(null, '', '#' + nextDocId);
               activateDoc(nextDocId, false);
               scrollWindowToTop();

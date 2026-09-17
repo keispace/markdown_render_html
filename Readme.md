@@ -120,6 +120,7 @@ Surge domain.
 | `--output <path>` | Output HTML path | `./output/index.html` |
 | `--exclude <pattern>` | Gitignore-style exclude pattern, repeatable | `_*.md`, `.*`, `**/.*/**` |
 | `--title <text>` | HTML `<title>` and sidebar title | `Render Docs` |
+| `--split-top-level-number` | Split output into `<number>.html` by leading digits of top-level directories, generating redirecting `index.html` | disabled (single `index.html`) |
 
 ## Supported input
 

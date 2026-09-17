@@ -16,6 +16,7 @@ type Options = {
   outputPath: string;
   excludePatterns: string[];
   title: string;
+  splitTopLevelNumber: boolean;
 };
 
 type DocEntry = {
@@ -24,6 +25,13 @@ type DocEntry = {
   title: string;
   sectionId: string;
   html: string;
+  pageHref: string;
+};
+
+type PageInfo = {
+  pageNumber: string;
+  pageHref: string;
+  entries: DocEntry[];
 };
 
 type HeadingMeta = {
@@ -48,6 +56,7 @@ type SourceDocLookupEntry = {
   sectionId: string;
   isJson: boolean;
   headingAnchorIds: Map<string, string>;
+  pageHref: string;
 };
 
 type TreeNode = {
@@ -119,13 +128,18 @@ function parseArgs(args: string[]): Options {
   let outputPath = resolve(Deno.cwd(), "output", "index.html");
   const excludePatterns = [...DEFAULT_EXCLUDE_PATTERNS];
   let title = DEFAULT_TITLE;
+  let splitTopLevelNumber = false;
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
     if (
       arg === "--input" || arg === "--output" || arg === "--exclude" ||
-      arg === "--title"
+      arg === "--title" || arg === "--split-top-level-number"
     ) {
+      if (arg === "--split-top-level-number") {
+        splitTopLevelNumber = true;
+        continue;
+      }
       const next = args[i + 1];
       if (!next) {
         throw new Error(`${arg} requires a value`);
@@ -145,7 +159,42 @@ function parseArgs(args: string[]): Options {
     throw new Error(`Unknown argument: ${arg}`);
   }
 
-  return { inputPath, outputPath, excludePatterns, title };
+  return { inputPath, outputPath, excludePatterns, title, splitTopLevelNumber };
+}
+
+function extractPageNumber(relPath: string): string {
+  const firstSegment = relPath.split("/")[0];
+  const match = firstSegment.match(/^(\d+)/);
+  if (!match) {
+    throw new Error(
+      `Cannot assign page number to path: ${relPath} — first segment "${firstSegment}" has no leading digits.`,
+    );
+  }
+  return match[1];
+}
+
+function buildPages(entries: DocEntry[]): PageInfo[] {
+  const pagesMap = new Map<string, DocEntry[]>();
+  for (const entry of entries) {
+    if (!entry.pageHref) {
+      throw new Error(`Entry has no pageHref: ${entry.relPath}`);
+    }
+    const pageNumber = extractPageNumber(entry.relPath);
+    if (!pagesMap.has(pageNumber)) {
+      pagesMap.set(pageNumber, []);
+    }
+    pagesMap.get(pageNumber)!.push(entry);
+  }
+
+  const pages: PageInfo[] = [];
+  for (const [pageNumber, pageEntries] of pagesMap.entries()) {
+    pages.push({
+      pageNumber,
+      pageHref: pageNumber + ".html",
+      entries: pageEntries,
+    });
+  }
+  return pages.sort((a, b) => parseInt(a.pageNumber) - parseInt(b.pageNumber));
 }
 
 function isExcludedPath(
@@ -323,7 +372,8 @@ function normalizeRenderedCodeBlockClasses(html: string): string {
         }
       });
 
-      const nextClasses = Array.from(new Set(mappedClassNames)).filter(Boolean).join(" ");
+      const nextClasses = Array.from(new Set(mappedClassNames)).filter(Boolean)
+        .join(" ");
       return nextClasses ? `<pre><code class="${nextClasses}">` : "<pre><code>";
     },
   );
@@ -387,6 +437,7 @@ async function loadSourceDocs(options: Options): Promise<SourceDoc[]> {
 
 function buildSourceDocLookup(
   docs: SourceDoc[],
+  splitTopLevelNumber: boolean,
 ): Map<string, SourceDocLookupEntry> {
   return new Map(
     docs.map((doc) => [
@@ -400,6 +451,9 @@ function buildSourceDocLookup(
             heading.anchorId,
           ]),
         ),
+        pageHref: splitTopLevelNumber
+          ? extractPageNumber(doc.relPath) + ".html"
+          : "",
       },
     ]),
   );
@@ -464,6 +518,7 @@ function rewriteLocalMarkdownLinks(
   html: string,
   currentRelPath: string,
   docLookup: Map<string, SourceDocLookupEntry>,
+  currentPageHref: string,
 ): string {
   return html.replace(
     /<a\b([^>]*)\bhref="([^"]+)"([^>]*)>/g,
@@ -511,7 +566,10 @@ function rewriteLocalMarkdownLinks(
       }
 
       const fragment = normalizeMarkdownFragment(fragmentParts.join("#"));
-      let nextHref = `#${targetDoc.sectionId}`;
+      let nextHref =
+        (targetDoc.pageHref && targetDoc.pageHref !== currentPageHref)
+          ? `${targetDoc.pageHref}#${targetDoc.sectionId}`
+          : `#${targetDoc.sectionId}`;
 
       if (fragment !== "") {
         if (targetDoc.isJson) {
@@ -531,7 +589,10 @@ function rewriteLocalMarkdownLinks(
             shouldOpenInNewTab(rawHref),
           );
         }
-        nextHref = `#${anchorId}`;
+        nextHref =
+          (targetDoc.pageHref && targetDoc.pageHref !== currentPageHref)
+            ? `${targetDoc.pageHref}#${anchorId}`
+            : `#${anchorId}`;
       }
 
       return renderAnchorTag(beforeHref, nextHref, afterHref, false);
@@ -559,6 +620,7 @@ function injectHeadingIds(html: string, headings: HeadingMeta[]): string {
 async function buildEntries(
   sourceDocs: SourceDoc[],
   docLookup: Map<string, SourceDocLookupEntry>,
+  splitTopLevelNumber: boolean,
 ): Promise<DocEntry[]> {
   return await Promise.all(
     sourceDocs.map(async (doc) => {
@@ -579,6 +641,7 @@ async function buildEntries(
             ),
             doc.relPath,
             docLookup,
+            splitTopLevelNumber ? extractPageNumber(doc.relPath) + ".html" : "",
           ),
         );
 
@@ -588,6 +651,9 @@ async function buildEntries(
         title: doc.title,
         sectionId: doc.sectionId,
         html,
+        pageHref: splitTopLevelNumber
+          ? extractPageNumber(doc.relPath) + ".html"
+          : "",
       };
     }),
   );
@@ -633,12 +699,12 @@ function groupPrefixDocuments(nodes: TreeNode[]): TreeNode[] {
         } else {
           rootLabel = `${prefix}. ${rootLabel}`;
         }
-        
+
         const dir = posix.dirname(node.sortKey);
         const rootNode: TreeNode = {
           label: rootLabel.trim(),
           sortKey: dir === "." ? `${prefix}-00` : `${dir}/${prefix}-00`,
-          children: []
+          children: [],
         };
         rootsByPrefix.set(prefix, rootNode);
       }
@@ -672,7 +738,10 @@ function groupPrefixDocuments(nodes: TreeNode[]): TreeNode[] {
   return newNodes;
 }
 
-function buildSidebarTree(entries: DocEntry[]): TreeNode[] {
+function buildSidebarTree(
+  entries: DocEntry[],
+  currentPageHref: string,
+): TreeNode[] {
   const roots: TreeNode[] = [];
 
   for (const entry of entries) {
@@ -700,7 +769,9 @@ function buildSidebarTree(entries: DocEntry[]): TreeNode[] {
     cursor.push({
       label: entry.title,
       sortKey: entry.relPath,
-      href: `#${entry.sectionId}`,
+      href: (entry.pageHref && entry.pageHref !== currentPageHref)
+        ? `${entry.pageHref}#${entry.sectionId}`
+        : `#${entry.sectionId}`,
       sectionId: entry.sectionId,
       children: [],
     });
@@ -740,25 +811,34 @@ function renderTree(nodes: TreeNode[], className: string): string {
 }
 
 function renderHtml(
-  entries: DocEntry[],
+  allEntries: DocEntry[],
+  pageEntries: DocEntry[],
   title: string,
   runtimeAssetHrefs: string[],
+  currentPageHref: string,
 ): string {
   const generatedAt = new Date().toISOString();
-  const navTree = renderTree(buildSidebarTree(entries), "tree-root");
-  const firstSectionId = entries[0]?.sectionId ?? "";
+  const navTree = renderTree(
+    buildSidebarTree(allEntries, currentPageHref),
+    "tree-root",
+  );
+  const firstSectionId = pageEntries[0]?.sectionId ?? "";
   const docOrderJson = JSON.stringify(
-    entries.map(({ sectionId, title, relPath }) => ({
-      sectionId,
-      title,
-      isAsset: relPath.includes("/assets/") || relPath.startsWith("assets/"),
-    })),
+    allEntries.map(({ sectionId, title, relPath, pageHref }) => {
+      const entry: Record<string, unknown> = {
+        sectionId,
+        title,
+        isAsset: relPath.includes("/assets/") || relPath.startsWith("assets/"),
+      };
+      if (currentPageHref) entry.pageHref = pageHref || "";
+      return entry;
+    }),
   ).replaceAll(
     "<",
     "\\u003c",
   );
 
-  const sections = entries
+  const sections = pageEntries
     .map(
       (entry) => `
       <section id="${entry.sectionId}" class="doc-section">
@@ -1405,6 +1485,7 @@ ${runtimeAssetScripts}
         const narrowSidebarQuery = window.matchMedia('(max-width: 960px)');
         const themePreferenceQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const themeStorageKey = 'render-doc-theme-mode';
+        const currentPageHref = '${escapeHtml(currentPageHref)}';
         const docOrder = ${docOrderJson};
 
         // Next/Prev는 assets 폴더 문서(스키마/payload JSON 등)를 건너뛴다.
@@ -1778,6 +1859,14 @@ ${runtimeAssetScripts}
           if (!docId) {
             return;
           }
+          if (!docId) {
+            return;
+          }
+          const targetEntry = docOrder.find(e => e.sectionId === docId);
+          if (targetEntry && targetEntry.pageHref && targetEntry.pageHref !== currentPageHref) {
+            window.location.href = targetEntry.pageHref + '#' + docId;
+            return;
+          }
           activeDoc = docId;
           if (switchToSingle) {
             setMode('single');
@@ -1823,7 +1912,12 @@ ${runtimeAssetScripts}
             const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
             const targetIndex = findAdjacentDocIndex(activeIndex, -1);
             if (targetIndex >= 0) {
-              const previousDocId = docOrder[targetIndex].sectionId;
+              const target = docOrder[targetIndex];
+              if (target.pageHref && target.pageHref !== currentPageHref) {
+                window.location.href = target.pageHref + '#' + target.sectionId;
+                return;
+              }
+              const previousDocId = target.sectionId;
               history.pushState(null, '', '#' + previousDocId);
               activateDoc(previousDocId, false);
               scrollWindowToTop();
@@ -1836,7 +1930,12 @@ ${runtimeAssetScripts}
             const activeIndex = docOrder.findIndex((entry) => entry.sectionId === activeDoc);
             const targetIndex = findAdjacentDocIndex(activeIndex, 1);
             if (targetIndex >= 0) {
-              const nextDocId = docOrder[targetIndex].sectionId;
+              const target = docOrder[targetIndex];
+              if (target.pageHref && target.pageHref !== currentPageHref) {
+                window.location.href = target.pageHref + '#' + target.sectionId;
+                return;
+              }
+              const nextDocId = target.sectionId;
               history.pushState(null, '', '#' + nextDocId);
               activateDoc(nextDocId, false);
               scrollWindowToTop();
@@ -1877,6 +1976,15 @@ ${runtimeAssetScripts}
           const hashId = normalizeHashTarget(window.location.hash);
           const docId = resolveDocId(hashId);
           if (!docId) {
+            const targetEntry = docOrder.find(e => e.sectionId === hashId);
+            if (targetEntry && targetEntry.pageHref && targetEntry.pageHref !== currentPageHref) {
+              window.location.replace(targetEntry.pageHref + '#' + hashId);
+            }
+            return;
+          }
+          const tgtEntry2 = docOrder.find(e => e.sectionId === docId);
+          if (tgtEntry2 && tgtEntry2.pageHref && tgtEntry2.pageHref !== currentPageHref) {
+            window.location.replace(tgtEntry2.pageHref + '#' + docId);
             return;
           }
           activateDoc(docId, false);
@@ -1891,7 +1999,18 @@ ${runtimeAssetScripts}
         if (initialHashId) {
           const docId = resolveDocId(initialHashId);
           if (docId) {
+            const tgtEntry = docOrder.find(e => e.sectionId === docId);
+            if (tgtEntry && tgtEntry.pageHref && tgtEntry.pageHref !== currentPageHref) {
+              window.location.replace(tgtEntry.pageHref + '#' + docId);
+              return;
+            }
             activeDoc = docId;
+          } else {
+            const fallbackEntry = docOrder.find(e => e.sectionId === initialHashId);
+            if (fallbackEntry && fallbackEntry.pageHref && fallbackEntry.pageHref !== currentPageHref) {
+              window.location.replace(fallbackEntry.pageHref + '#' + initialHashId);
+              return;
+            }
           }
         }
 
@@ -1976,11 +2095,60 @@ async function syncRuntimeAssets(outputDir: string): Promise<string[]> {
   );
 }
 
+function renderIndexHtml(
+  pages: PageInfo[],
+  allEntries: DocEntry[],
+  title: string,
+  _cssHref: string,
+): string {
+  const docPagesMap: Record<string, string> = {};
+  for (const entry of allEntries) {
+    if (entry.pageHref) {
+      docPagesMap[entry.sectionId] = entry.pageHref;
+    }
+  }
+
+  const firstPage = pages[0]?.pageHref || "0.html";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>${escapeHtml(title)}</title>
+<script>
+  (function() {
+    var DOC_PAGES = ${JSON.stringify(docPagesMap)};
+    var hash = location.hash.slice(1);
+    if (hash) {
+      var targetHash = hash;
+      try { targetHash = decodeURIComponent(hash); } catch(e) {}
+      for (var sectionId in DOC_PAGES) {
+        if (targetHash === sectionId || targetHash.indexOf(sectionId + '--') === 0) {
+          location.replace(DOC_PAGES[sectionId] + '#' + targetHash);
+          return;
+        }
+      }
+    }
+    location.replace('${escapeHtml(firstPage)}');
+  })();
+</script>
+</head>
+<body></body>
+</html>`;
+}
+
 async function main() {
   const options = parseArgs(Deno.args);
   const sourceDocs = await loadSourceDocs(options);
-  const docLookup = buildSourceDocLookup(sourceDocs);
-  const entries = await buildEntries(sourceDocs, docLookup);
+  const docLookup = buildSourceDocLookup(
+    sourceDocs,
+    options.splitTopLevelNumber,
+  );
+  const entries = await buildEntries(
+    sourceDocs,
+    docLookup,
+    options.splitTopLevelNumber,
+  );
   if (entries.length === 0) {
     throw new Error("No markdown documents matched the current include rules.");
   }
@@ -1991,15 +2159,63 @@ async function main() {
   const cssFileName = `${htmlBaseName}.css`;
   const cssPath = join(outputDir, cssFileName);
   const runtimeAssetHrefs = await syncRuntimeAssets(outputDir);
-  const html = renderHtml(entries, options.title, runtimeAssetHrefs);
-  const splitOutput = splitInlineStylesheet(html, cssFileName);
   await Deno.mkdir(outputDir, { recursive: true });
-  await Deno.writeTextFile(cssPath, splitOutput.css);
-  await Deno.writeTextFile(options.outputPath, splitOutput.html);
-  console.log(`Wrote stylesheet to ${cssPath}`);
-  console.log(`Wrote ${entries.length} docs to ${options.outputPath}`);
+
+  if (options.splitTopLevelNumber) {
+    const pages = buildPages(entries);
+    let css = "";
+
+    for (const page of pages) {
+      const html = renderHtml(
+        entries,
+        page.entries,
+        options.title,
+        runtimeAssetHrefs,
+        page.pageHref,
+      );
+      const splitOutput = splitInlineStylesheet(html, cssFileName);
+      if (!css) css = splitOutput.css;
+      const pagePath = join(outputDir, page.pageHref);
+      await Deno.writeTextFile(pagePath, splitOutput.html);
+      console.log(`Wrote ${page.entries.length} docs to ${pagePath}`);
+    }
+
+    await Deno.writeTextFile(cssPath, css);
+
+    const indexHtml = renderIndexHtml(
+      pages,
+      entries,
+      options.title,
+      cssFileName,
+    );
+    await Deno.writeTextFile(join(outputDir, "index.html"), indexHtml);
+    console.log(`Wrote landing page to ${join(outputDir, "index.html")}`);
+    console.log(`Wrote stylesheet to ${cssPath}`);
+  } else {
+    const html = renderHtml(
+      entries,
+      entries,
+      options.title,
+      runtimeAssetHrefs,
+      "",
+    );
+    const splitOutput = splitInlineStylesheet(html, cssFileName);
+    await Deno.writeTextFile(cssPath, splitOutput.css);
+    await Deno.writeTextFile(options.outputPath, splitOutput.html);
+    console.log(`Wrote stylesheet to ${cssPath}`);
+    console.log(`Wrote ${entries.length} docs to ${options.outputPath}`);
+  }
 }
 
 if (import.meta.main) {
   await main();
 }
+
+export const _testing = {
+  parseArgs,
+  extractPageNumber,
+  buildPages,
+  renderIndexHtml,
+  toAnchorSlug,
+  toSectionId,
+};

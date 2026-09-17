@@ -120,6 +120,7 @@ printf '%s\n' 'your-project.surge.sh' > ./sample/output/CNAME
 | `--output <path>` | output HTML 경로 | `./output/index.html` |
 | `--exclude <pattern>` | gitignore-style exclude pattern, 반복 지정 가능 | `_*.md`, `.*`, `**/.*/**` |
 | `--title <text>` | HTML `<title>` + sidebar title | `Render Docs` |
+| `--split-top-level-number` | 최상위 디렉토리 앞자리 숫자를 기준으로 `<번호>.html`로 분할 출력하고 `index.html`은 리디렉션 페이지로 생성 | 미사용 (단일 `index.html`) |
 
 ## 지원 입력 형식
 
